@@ -146,3 +146,7 @@ Add new features by:
 ---
 
 **Note**: This is a demonstration dashboard. For actual vehicle integration, additional safety measures and real sensor data would be required.
+## Web Calculator
+
+Это простое веб-приложение для выполнения базовых арифметических операций. Откройте `calculator.html` в браузере, чтобы использовать калькулятор.
+
