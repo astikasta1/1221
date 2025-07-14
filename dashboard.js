@@ -12,6 +12,7 @@ let dashboardState = {
     odometer: 123456,
     tripDistance: 245.7,
     outsideTemp: 22,
+    heading: 0,
     warningLights: {
         engine: false,
         oil: false,
@@ -43,6 +44,7 @@ function initializeDashboard() {
     drawTemperatureGauge();
     drawOilPressureGauge();
     drawVoltmeter();
+    drawCompass();
     updateDigitalDisplays();
     updateWarningLights();
 }
@@ -188,6 +190,46 @@ function drawVoltmeter() {
     drawNeedle(ctx, centerX, centerY, radius - 10, angle, needleColor, 2);
     
     drawCenterCap(ctx, centerX, centerY, 8);
+}
+
+function drawCompass() {
+    const canvas = document.getElementById('compass');
+    const ctx = canvas.getContext('2d');
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = 60;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawGaugeRing(ctx, centerX, centerY, radius, '#333', '#555');
+
+    const labels = ['N', 'E', 'S', 'W'];
+    labels.forEach((label, i) => {
+        const angle = (i / 4) * 360 - 90;
+        const radian = angle * Math.PI / 180;
+        const textX = centerX + (radius - 15) * Math.cos(radian);
+        const textY = centerY + (radius - 15) * Math.sin(radian) + 4;
+        ctx.fillStyle = '#00ff88';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, textX, textY);
+    });
+
+    const angle = (dashboardState.heading - 90) * Math.PI / 180;
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(centerX + (radius - 20) * Math.cos(angle), centerY + (radius - 20) * Math.sin(angle));
+    ctx.strokeStyle = '#00ff88';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    drawCenterCap(ctx, centerX, centerY, 8);
+
+    ctx.fillStyle = '#00ff88';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${Math.round(dashboardState.heading)}°`, centerX, centerY + radius + 12);
 }
 
 // Helper drawing functions
@@ -373,10 +415,11 @@ function startAnimation() {
             if (dashboardState.engineOn) {
                 dashboardState.rpm += (Math.random() - 0.5) * 100;
                 dashboardState.rpm = Math.max(800, Math.min(dashboardState.rpm, 7500));
-                
+
                 if (dashboardState.speed > 0) {
                     dashboardState.oilPressure = 40 + Math.random() * 30;
                     dashboardState.voltage = 13.8 + (Math.random() - 0.5) * 0.4;
+                    dashboardState.heading = (dashboardState.heading + 0.5) % 360;
                 }
             }
             
@@ -392,6 +435,7 @@ function startAnimation() {
             drawTemperatureGauge();
             drawOilPressureGauge();
             drawVoltmeter();
+            drawCompass();
             updateWarningLights();
             
             lastTime = currentTime;
@@ -478,6 +522,7 @@ function resetDashboard() {
         odometer: 123456,
         tripDistance: 245.7,
         outsideTemp: 22,
+        heading: 0,
         warningLights: {
             engine: false,
             oil: false,
