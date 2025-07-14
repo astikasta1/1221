@@ -1,90 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Land Rover Dashboard</title>
-    <link rel="stylesheet" href="dashboard.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Land Rover Style Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
-    <div class="dashboard-container">
-        <div class="dashboard-header">
-            <div class="logo">LAND ROVER</div>
-            <div class="status-lights">
-                <div class="warning-light" id="engineLight"></div>
-                <div class="warning-light" id="oilLight"></div>
-                <div class="warning-light" id="batteryLight"></div>
-                <div class="warning-light" id="tempLight"></div>
-            </div>
-        </div>
-        
-        <div class="main-gauges">
-            <div class="gauge-container">
-                <canvas id="speedometer" width="300" height="300"></canvas>
-                <div class="gauge-label">SPEED</div>
-            </div>
-            
-            <div class="center-display">
-                <div class="digital-display">
-                    <div class="gear-display" id="gearDisplay">P</div>
-                    <div class="odometer" id="odometer">123,456 km</div>
-                    <div class="trip-display" id="tripDisplay">Trip: 245.7 km</div>
-                </div>
-                
-                <div class="terrain-info">
-                    <div class="terrain-mode" id="terrainMode">NORMAL</div>
-                    <div class="suspension-status" id="suspension">AIR SUSPENSION</div>
-                </div>
-            </div>
-            
-            <div class="gauge-container">
-                <canvas id="tachometer" width="300" height="300"></canvas>
-                <div class="gauge-label">RPM x1000</div>
-            </div>
-        </div>
-        
-        <div class="secondary-gauges">
-            <div class="small-gauge-container">
-                <canvas id="fuelGauge" width="150" height="150"></canvas>
-                <div class="gauge-label">FUEL</div>
-            </div>
-            
-            <div class="small-gauge-container">
-                <canvas id="tempGauge" width="150" height="150"></canvas>
-                <div class="gauge-label">TEMP</div>
-            </div>
-            
-            <div class="small-gauge-container">
-                <canvas id="oilPressure" width="150" height="150"></canvas>
-                <div class="gauge-label">OIL</div>
-            </div>
-            
-            <div class="small-gauge-container">
-                <canvas id="voltmeter" width="150" height="150"></canvas>
-                <div class="gauge-label">VOLTS</div>
-            </div>
-        </div>
-        
-        <div class="dashboard-footer">
-            <div class="climate-info">
-                <span id="outsideTemp">22°C</span>
-                <span>Outside</span>
-            </div>
-            <div class="time-display" id="timeDisplay">12:34</div>
-            <div class="navigation-info">
-                <span>Next: 2.5 km</span>
-                <span>Turn Right</span>
-            </div>
-        </div>
+  <div id="dashboard">
+    <!-- Main Gauges -->
+    <div class="row main-gauges">
+      <canvas id="speedometer" width="300" height="300"></canvas>
+      <canvas id="tachometer" width="300" height="300"></canvas>
     </div>
-    
-    <div class="controls">
-        <button onclick="toggleEngine()">Engine On/Off</button>
-        <button onclick="changeTerrain()">Terrain Mode</button>
-        <button onclick="simulateDriving()">Simulate Driving</button>
-        <button onclick="resetDashboard()">Reset</button>
+
+    <!-- Secondary Gauges -->
+    <div class="row secondary-gauges">
+      <canvas id="fuelGauge" width="150" height="150"></canvas>
+      <canvas id="tempGauge" width="150" height="150"></canvas>
+      <canvas id="oilGauge" width="150" height="150"></canvas>
+      <canvas id="voltGauge" width="150" height="150"></canvas>
     </div>
-    
-    <script src="dashboard.js"></script>
+
+    <!-- Digital Displays -->
+    <div class="row displays">
+      <div class="display" id="gearDisplay">P</div>
+      <div class="display" id="odometerDisplay">000000 km</div>
+      <div class="display" id="tripDisplay">Trip 0.0 km</div>
+      <div class="display" id="terrainDisplay">NORMAL</div>
+      <div class="display" id="airDisplay">Air Susp: NORMAL</div>
+      <div class="display" id="clockDisplay">00:00</div>
+      <div class="display" id="outsideTempDisplay">-- °C</div>
+    </div>
+
+    <!-- Controls -->
+    <div class="row controls">
+      <button id="engineBtn">Engine On/Off (E)</button>
+      <button id="terrainBtn">Terrain Mode (T)</button>
+      <button id="simulateBtn">Sim Drive (S)</button>
+      <button id="resetBtn">Reset (R)</button>
+    </div>
+
+    <!-- Warning Lights -->
+    <div class="row warnings">
+      <div class="warning" id="engineWarn">ENGINE</div>
+      <div class="warning" id="oilWarn">OIL</div>
+      <div class="warning" id="batteryWarn">BATTERY</div>
+      <div class="warning" id="tempWarn">TEMP</div>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
 </body>
 </html>

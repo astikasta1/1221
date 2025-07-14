@@ -1,527 +1,381 @@
-// Dashboard State
-let dashboardState = {
-    engineOn: false,
-    speed: 0,
-    rpm: 0,
-    fuel: 75,
-    temperature: 85,
-    oilPressure: 50,
-    voltage: 12.6,
-    gear: 'P',
-    terrainMode: 'NORMAL',
-    odometer: 123456,
-    tripDistance: 245.7,
-    outsideTemp: 22,
-    warningLights: {
-        engine: false,
-        oil: false,
-        battery: false,
-        temp: false
-    }
+/* Land Rover Style Dashboard JavaScript */
+
+// =====================
+//  CONFIGURATION
+// =====================
+const CONFIG = {
+  maxSpeed: 260,      // km/h
+  maxRPM: 8000,       // rev/min
+  idleRPM: 800,
+  maxFuel: 100,       // percent
+  maxTemp: 120,       // °C
+  maxOil: 100,        // psi (simulated)
+  maxVolt: 16,        // V
+  fps: 20             // updates per second
 };
 
-// Animation variables
-let animationFrameId;
-let lastTime = 0;
+// =====================
+//  STATE
+// =====================
+const state = {
+  speed: 0,
+  rpm: 0,
+  fuel: 100,
+  temp: 70,
+  oil: 40,
+  volt: 12.1,
+  gear: 'P',
+  odometer: 0,  // km
+  trip: 0,      // km
+  terrainIdx: 0,
+  terrainModes: ['NORMAL', 'SAND', 'ROCK', 'MUD', 'SNOW', 'AUTO'],
+  airSuspension: 'NORMAL',
+  engineOn: false,
+  simDriving: false,
+  lastTimestamp: performance.now()
+};
 
-// Terrain modes
-const terrainModes = ['NORMAL', 'SAND', 'ROCK', 'MUD', 'SNOW', 'AUTO'];
-let currentTerrainIndex = 0;
+// =====================
+//  DOM REFERENCES
+// =====================
+const canvases = {
+  speed: document.getElementById('speedometer'),
+  rpm: document.getElementById('tachometer'),
+  fuel: document.getElementById('fuelGauge'),
+  temp: document.getElementById('tempGauge'),
+  oil: document.getElementById('oilGauge'),
+  volt: document.getElementById('voltGauge')
+};
 
-// Initialize dashboard
-document.addEventListener('DOMContentLoaded', function() {
-    initializeDashboard();
-    startTimeUpdate();
-    startAnimation();
-});
-
-function initializeDashboard() {
-    // Initialize all gauges
-    drawSpeedometer();
-    drawTachometer();
-    drawFuelGauge();
-    drawTemperatureGauge();
-    drawOilPressureGauge();
-    drawVoltmeter();
-    updateDigitalDisplays();
-    updateWarningLights();
+const ctx = {};
+for (const key in canvases) {
+  ctx[key] = canvases[key].getContext('2d');
 }
 
-// Gauge drawing functions
-function drawSpeedometer() {
-    const canvas = document.getElementById('speedometer');
-    const ctx = canvas.getContext('2d');
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const radius = 120;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw outer ring
-    drawGaugeRing(ctx, centerX, centerY, radius, '#333', '#555');
-    
-    // Draw scale (0-260 km/h)
-    drawSpeedScale(ctx, centerX, centerY, radius);
-    
-    // Draw needle
-    const angle = (dashboardState.speed / 260) * 240 - 120; // 240 degree range
-    drawNeedle(ctx, centerX, centerY, radius - 20, angle, '#00ff88', 4);
-    
-    // Draw center cap
-    drawCenterCap(ctx, centerX, centerY);
-    
-    // Draw speed value
-    ctx.fillStyle = '#00ff88';
-    ctx.font = 'bold 24px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(Math.round(dashboardState.speed), centerX, centerY + 50);
-    ctx.font = '12px Arial';
-    ctx.fillText('km/h', centerX, centerY + 70);
+const displays = {
+  gear: document.getElementById('gearDisplay'),
+  odometer: document.getElementById('odometerDisplay'),
+  trip: document.getElementById('tripDisplay'),
+  terrain: document.getElementById('terrainDisplay'),
+  air: document.getElementById('airDisplay'),
+  clock: document.getElementById('clockDisplay'),
+  outside: document.getElementById('outsideTempDisplay')
+};
+
+const warnings = {
+  engine: document.getElementById('engineWarn'),
+  oil: document.getElementById('oilWarn'),
+  battery: document.getElementById('batteryWarn'),
+  temp: document.getElementById('tempWarn')
+};
+
+const buttons = {
+  engine: document.getElementById('engineBtn'),
+  terrain: document.getElementById('terrainBtn'),
+  simulate: document.getElementById('simulateBtn'),
+  reset: document.getElementById('resetBtn')
+};
+
+// =====================
+//  INITIALISATION
+// =====================
+(function init() {
+  // Set outside temperature randomly for demo
+  state.outsideTemp = (Math.random() * 25 + 5).toFixed(1);
+  displays.outside.textContent = `${state.outsideTemp} °C`;
+
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Button listeners
+  buttons.engine.addEventListener('click', toggleEngine);
+  buttons.terrain.addEventListener('click', nextTerrainMode);
+  buttons.simulate.addEventListener('click', toggleSimDriving);
+  buttons.reset.addEventListener('click', resetDashboard);
+
+  // Keyboard listeners
+  window.addEventListener('keydown', handleKey);
+
+  // Start animation loop
+  requestAnimationFrame(loop);
+})();
+
+// =====================
+//  CLOCK
+// =====================
+function updateClock() {
+  const d = new Date();
+  const h = d.getHours().toString().padStart(2, '0');
+  const m = d.getMinutes().toString().padStart(2, '0');
+  displays.clock.textContent = `${h}:${m}`;
 }
 
-function drawTachometer() {
-    const canvas = document.getElementById('tachometer');
-    const ctx = canvas.getContext('2d');
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const radius = 120;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw outer ring
-    drawGaugeRing(ctx, centerX, centerY, radius, '#333', '#555');
-    
-    // Draw scale (0-8 x1000 RPM)
-    drawRPMScale(ctx, centerX, centerY, radius);
-    
-    // Draw red zone (6000+ RPM)
-    drawRedZone(ctx, centerX, centerY, radius);
-    
-    // Draw needle
-    const angle = (dashboardState.rpm / 8000) * 240 - 120;
-    const needleColor = dashboardState.rpm > 6000 ? '#ff4444' : '#00ff88';
-    drawNeedle(ctx, centerX, centerY, radius - 20, angle, needleColor, 4);
-    
-    // Draw center cap
-    drawCenterCap(ctx, centerX, centerY);
-    
-    // Draw RPM value
-    ctx.fillStyle = dashboardState.rpm > 6000 ? '#ff4444' : '#00ff88';
-    ctx.font = 'bold 20px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(Math.round(dashboardState.rpm / 100) / 10, centerX, centerY + 50);
-}
-
-function drawFuelGauge() {
-    const canvas = document.getElementById('fuelGauge');
-    const ctx = canvas.getContext('2d');
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const radius = 60;
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    drawGaugeRing(ctx, centerX, centerY, radius, '#333', '#555');
-    drawSmallGaugeScale(ctx, centerX, centerY, radius, ['E', '1/2', 'F']);
-    
-    const angle = (dashboardState.fuel / 100) * 180 - 90;
-    const needleColor = dashboardState.fuel < 20 ? '#ff4444' : '#00ff88';
-    drawNeedle(ctx, centerX, centerY, radius - 10, angle, needleColor, 2);
-    
-    drawCenterCap(ctx, centerX, centerY, 8);
-}
-
-function drawTemperatureGauge() {
-    const canvas = document.getElementById('tempGauge');
-    const ctx = canvas.getContext('2d');
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const radius = 60;
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    drawGaugeRing(ctx, centerX, centerY, radius, '#333', '#555');
-    drawSmallGaugeScale(ctx, centerX, centerY, radius, ['C', '1/2', 'H']);
-    
-    const angle = (dashboardState.temperature / 120) * 180 - 90;
-    const needleColor = dashboardState.temperature > 100 ? '#ff4444' : '#00ff88';
-    drawNeedle(ctx, centerX, centerY, radius - 10, angle, needleColor, 2);
-    
-    drawCenterCap(ctx, centerX, centerY, 8);
-}
-
-function drawOilPressureGauge() {
-    const canvas = document.getElementById('oilPressure');
-    const ctx = canvas.getContext('2d');
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const radius = 60;
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    drawGaugeRing(ctx, centerX, centerY, radius, '#333', '#555');
-    drawSmallGaugeScale(ctx, centerX, centerY, radius, ['0', '50', '100']);
-    
-    const angle = (dashboardState.oilPressure / 100) * 180 - 90;
-    const needleColor = dashboardState.oilPressure < 20 ? '#ff4444' : '#00ff88';
-    drawNeedle(ctx, centerX, centerY, radius - 10, angle, needleColor, 2);
-    
-    drawCenterCap(ctx, centerX, centerY, 8);
-}
-
-function drawVoltmeter() {
-    const canvas = document.getElementById('voltmeter');
-    const ctx = canvas.getContext('2d');
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const radius = 60;
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    drawGaugeRing(ctx, centerX, centerY, radius, '#333', '#555');
-    drawSmallGaugeScale(ctx, centerX, centerY, radius, ['10', '12', '14']);
-    
-    const angle = ((dashboardState.voltage - 10) / 4) * 180 - 90;
-    const needleColor = (dashboardState.voltage < 11 || dashboardState.voltage > 14) ? '#ff4444' : '#00ff88';
-    drawNeedle(ctx, centerX, centerY, radius - 10, angle, needleColor, 2);
-    
-    drawCenterCap(ctx, centerX, centerY, 8);
-}
-
-// Helper drawing functions
-function drawGaugeRing(ctx, centerX, centerY, radius, innerColor, outerColor) {
-    // Outer ring
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-    ctx.strokeStyle = outerColor;
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    
-    // Inner ring
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius - 10, 0, 2 * Math.PI);
-    ctx.strokeStyle = innerColor;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-}
-
-function drawSpeedScale(ctx, centerX, centerY, radius) {
-    ctx.strokeStyle = '#555';
-    ctx.fillStyle = '#00ff88';
-    ctx.font = '12px Arial';
-    ctx.textAlign = 'center';
-    
-    for (let i = 0; i <= 260; i += 20) {
-        const angle = (i / 260) * 240 - 120;
-        const radian = (angle * Math.PI) / 180;
-        
-        const x1 = centerX + (radius - 15) * Math.cos(radian);
-        const y1 = centerY + (radius - 15) * Math.sin(radian);
-        const x2 = centerX + (radius - 5) * Math.cos(radian);
-        const y2 = centerY + (radius - 5) * Math.sin(radian);
-        
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.lineWidth = i % 40 === 0 ? 2 : 1;
-        ctx.stroke();
-        
-        if (i % 40 === 0) {
-            const textX = centerX + (radius - 25) * Math.cos(radian);
-            const textY = centerY + (radius - 25) * Math.sin(radian) + 4;
-            ctx.fillText(i.toString(), textX, textY);
-        }
-    }
-}
-
-function drawRPMScale(ctx, centerX, centerY, radius) {
-    ctx.strokeStyle = '#555';
-    ctx.fillStyle = '#00ff88';
-    ctx.font = '12px Arial';
-    ctx.textAlign = 'center';
-    
-    for (let i = 0; i <= 8; i++) {
-        const angle = (i / 8) * 240 - 120;
-        const radian = (angle * Math.PI) / 180;
-        
-        const x1 = centerX + (radius - 15) * Math.cos(radian);
-        const y1 = centerY + (radius - 15) * Math.sin(radian);
-        const x2 = centerX + (radius - 5) * Math.cos(radian);
-        const y2 = centerY + (radius - 5) * Math.sin(radian);
-        
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        
-        const textX = centerX + (radius - 25) * Math.cos(radian);
-        const textY = centerY + (radius - 25) * Math.sin(radian) + 4;
-        ctx.fillStyle = i >= 6 ? '#ff4444' : '#00ff88';
-        ctx.fillText(i.toString(), textX, textY);
-    }
-}
-
-function drawRedZone(ctx, centerX, centerY, radius) {
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius - 10, (6/8) * 240 - 120, 240 - 120);
-    ctx.strokeStyle = '#ff4444';
-    ctx.lineWidth = 8;
-    ctx.stroke();
-}
-
-function drawSmallGaugeScale(ctx, centerX, centerY, radius, labels) {
-    ctx.strokeStyle = '#555';
-    ctx.fillStyle = '#00ff88';
-    ctx.font = '10px Arial';
-    ctx.textAlign = 'center';
-    
-    for (let i = 0; i < labels.length; i++) {
-        const angle = (i / (labels.length - 1)) * 180 - 90;
-        const radian = (angle * Math.PI) / 180;
-        
-        const x1 = centerX + (radius - 10) * Math.cos(radian);
-        const y1 = centerY + (radius - 10) * Math.sin(radian);
-        const x2 = centerX + (radius - 3) * Math.cos(radian);
-        const y2 = centerY + (radius - 3) * Math.sin(radian);
-        
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        
-        const textX = centerX + (radius - 18) * Math.cos(radian);
-        const textY = centerY + (radius - 18) * Math.sin(radian) + 3;
-        ctx.fillText(labels[i], textX, textY);
-    }
-}
-
-function drawNeedle(ctx, centerX, centerY, length, angle, color, width) {
-    const radian = (angle * Math.PI) / 180;
-    
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY);
-    ctx.lineTo(
-        centerX + length * Math.cos(radian),
-        centerY + length * Math.sin(radian)
-    );
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-    
-    // Add glow effect
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 10;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-}
-
-function drawCenterCap(ctx, centerX, centerY, radius = 12) {
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = '#333';
-    ctx.fill();
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-}
-
-// Update functions
-function updateDigitalDisplays() {
-    document.getElementById('gearDisplay').textContent = dashboardState.gear;
-    document.getElementById('odometer').textContent = `${dashboardState.odometer.toLocaleString()} km`;
-    document.getElementById('tripDisplay').textContent = `Trip: ${dashboardState.tripDistance.toFixed(1)} km`;
-    document.getElementById('terrainMode').textContent = dashboardState.terrainMode;
-    document.getElementById('outsideTemp').textContent = `${dashboardState.outsideTemp}°C`;
-}
-
-function updateWarningLights() {
-    const lights = ['engine', 'oil', 'battery', 'temp'];
-    lights.forEach(light => {
-        const element = document.getElementById(light + 'Light');
-        if (dashboardState.warningLights[light]) {
-            element.classList.add('active', light);
-        } else {
-            element.classList.remove('active', light);
-        }
-    });
-}
-
-function startTimeUpdate() {
-    function updateTime() {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString('en-US', { 
-            hour12: false, 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        });
-        document.getElementById('timeDisplay').textContent = timeString;
-    }
-    
-    updateTime();
-    setInterval(updateTime, 1000);
-}
-
-function startAnimation() {
-    function animate(currentTime) {
-        if (currentTime - lastTime >= 50) { // 20 FPS
-            // Add some realistic fluctuations
-            if (dashboardState.engineOn) {
-                dashboardState.rpm += (Math.random() - 0.5) * 100;
-                dashboardState.rpm = Math.max(800, Math.min(dashboardState.rpm, 7500));
-                
-                if (dashboardState.speed > 0) {
-                    dashboardState.oilPressure = 40 + Math.random() * 30;
-                    dashboardState.voltage = 13.8 + (Math.random() - 0.5) * 0.4;
-                }
-            }
-            
-            // Check warning conditions
-            dashboardState.warningLights.oil = dashboardState.oilPressure < 20;
-            dashboardState.warningLights.temp = dashboardState.temperature > 100;
-            dashboardState.warningLights.battery = dashboardState.voltage < 11 || dashboardState.voltage > 14;
-            
-            // Redraw gauges
-            drawSpeedometer();
-            drawTachometer();
-            drawFuelGauge();
-            drawTemperatureGauge();
-            drawOilPressureGauge();
-            drawVoltmeter();
-            updateWarningLights();
-            
-            lastTime = currentTime;
-        }
-        
-        animationFrameId = requestAnimationFrame(animate);
-    }
-    
-    animationFrameId = requestAnimationFrame(animate);
-}
-
-// Control functions
+// =====================
+//  CONTROLS
+// =====================
 function toggleEngine() {
-    dashboardState.engineOn = !dashboardState.engineOn;
-    
-    if (dashboardState.engineOn) {
-        dashboardState.rpm = 800; // Idle RPM
-        dashboardState.oilPressure = 45;
-        dashboardState.voltage = 13.8;
-        dashboardState.gear = 'D';
-        dashboardState.warningLights.engine = false;
-    } else {
-        dashboardState.rpm = 0;
-        dashboardState.speed = 0;
-        dashboardState.oilPressure = 0;
-        dashboardState.voltage = 12.1;
-        dashboardState.gear = 'P';
-        dashboardState.warningLights.engine = true;
-    }
-    
-    updateDigitalDisplays();
+  state.engineOn = !state.engineOn;
+  if (!state.engineOn) {
+    state.speed = 0;
+    state.rpm = 0;
+    state.gear = 'P';
+    state.simDriving = false;
+  } else {
+    state.rpm = CONFIG.idleRPM;
+    state.gear = 'D';
+  }
+  updateDisplays();
 }
 
-function changeTerrain() {
-    currentTerrainIndex = (currentTerrainIndex + 1) % terrainModes.length;
-    dashboardState.terrainMode = terrainModes[currentTerrainIndex];
-    updateDigitalDisplays();
+function nextTerrainMode() {
+  state.terrainIdx = (state.terrainIdx + 1) % state.terrainModes.length;
+  updateDisplays();
 }
 
-function simulateDriving() {
-    if (!dashboardState.engineOn) {
-        toggleEngine();
-    }
-    
-    let targetSpeed = 60 + Math.random() * 80;
-    let targetRPM = 2000 + Math.random() * 2000;
-    
-    function driveAnimation() {
-        if (dashboardState.speed < targetSpeed) {
-            dashboardState.speed += 2;
-            dashboardState.rpm = Math.min(targetRPM, dashboardState.rpm + 50);
-        }
-        
-        // Consume fuel
-        dashboardState.fuel = Math.max(0, dashboardState.fuel - 0.02);
-        
-        // Increase temperature slightly
-        dashboardState.temperature = Math.min(105, dashboardState.temperature + 0.1);
-        
-        // Update trip distance
-        dashboardState.tripDistance += dashboardState.speed * 0.001;
-        
-        updateDigitalDisplays();
-        
-        if (dashboardState.speed < targetSpeed) {
-            setTimeout(driveAnimation, 100);
-        }
-    }
-    
-    driveAnimation();
+function toggleSimDriving() {
+  if (!state.engineOn) return; // only when engine on
+  state.simDriving = !state.simDriving;
 }
 
 function resetDashboard() {
-    dashboardState = {
-        engineOn: false,
-        speed: 0,
-        rpm: 0,
-        fuel: 75,
-        temperature: 85,
-        oilPressure: 50,
-        voltage: 12.6,
-        gear: 'P',
-        terrainMode: 'NORMAL',
-        odometer: 123456,
-        tripDistance: 245.7,
-        outsideTemp: 22,
-        warningLights: {
-            engine: false,
-            oil: false,
-            battery: false,
-            temp: false
-        }
-    };
-    
-    currentTerrainIndex = 0;
-    updateDigitalDisplays();
+  Object.assign(state, {
+    speed: 0,
+    rpm: 0,
+    fuel: 100,
+    temp: 70,
+    oil: 40,
+    volt: 12.1,
+    gear: 'P',
+    odometer: 0,
+    trip: 0,
+    terrainIdx: 0,
+    airSuspension: 'NORMAL',
+    engineOn: false,
+    simDriving: false
+  });
+  updateDisplays();
 }
 
-// Keyboard controls
-document.addEventListener('keydown', function(event) {
-    switch(event.key) {
-        case 'e':
-        case 'E':
-            toggleEngine();
-            break;
-        case 't':
-        case 'T':
-            changeTerrain();
-            break;
-        case 's':
-        case 'S':
-            simulateDriving();
-            break;
-        case 'r':
-        case 'R':
-            resetDashboard();
-            break;
-        case 'ArrowUp':
-            if (dashboardState.engineOn && dashboardState.speed < 260) {
-                dashboardState.speed += 5;
-                dashboardState.rpm = Math.min(7500, dashboardState.rpm + 200);
-            }
-            event.preventDefault();
-            break;
-        case 'ArrowDown':
-            if (dashboardState.engineOn && dashboardState.speed > 0) {
-                dashboardState.speed = Math.max(0, dashboardState.speed - 5);
-                dashboardState.rpm = Math.max(800, dashboardState.rpm - 200);
-            }
-            event.preventDefault();
-            break;
+function handleKey(e) {
+  switch (e.key) {
+    case 'E':
+    case 'e':
+      toggleEngine();
+      break;
+    case 'T':
+    case 't':
+      nextTerrainMode();
+      break;
+    case 'S':
+    case 's':
+      toggleSimDriving();
+      break;
+    case 'R':
+    case 'r':
+      resetDashboard();
+      break;
+    case 'ArrowUp':
+      if (state.engineOn) state.speed = Math.min(CONFIG.maxSpeed, state.speed + 5);
+      break;
+    case 'ArrowDown':
+      if (state.engineOn) state.speed = Math.max(0, state.speed - 5);
+      break;
+  }
+}
+
+// =====================
+//  MAIN LOOP
+// =====================
+function loop(timestamp) {
+  const delta = timestamp - state.lastTimestamp;
+  const dt = delta / 1000; // seconds
+  state.lastTimestamp = timestamp;
+
+  if (state.engineOn) {
+    // RPM varies with speed plus idle
+    const targetRPM = CONFIG.idleRPM + state.speed * 40; // simple linear mapping
+    state.rpm += (targetRPM - state.rpm) * 0.1; // smoothing
+
+    // Voltage
+    state.volt += ((13.8 - state.volt) * 0.05);
+
+    // Oil pressure related to rpm
+    state.oil = Math.max(0, Math.min(CONFIG.maxOil, 20 + state.rpm / 100));
+
+    // Temperature rises slowly
+    state.temp += 0.02 * dt * (state.simDriving ? 2 : 1);
+    if (state.temp > CONFIG.maxTemp) state.temp = CONFIG.maxTemp;
+  } else {
+    // Engine off idle values
+    state.rpm += (0 - state.rpm) * 0.1;
+    state.volt += ((12.1 - state.volt) * 0.05);
+    state.oil += ((0 - state.oil) * 0.1);
+    // Cool down
+    state.temp += ((70 - state.temp) * 0.01);
+  }
+
+  // Simulate driving
+  if (state.simDriving) {
+    // Simple sine wave speed profile
+    const t = timestamp / 1000;
+    const targetSpeed = 80 + 60 * Math.sin(t / 5);
+    state.speed += (targetSpeed - state.speed) * 0.02;
+
+    // Fuel consumption
+    state.fuel = Math.max(0, state.fuel - 0.005 * dt * (state.speed / 100));
+  } else {
+    // Natural slow down when not accelerating
+    if (!state.engineOn) {
+      state.speed += (0 - state.speed) * 0.05;
     }
-});
+  }
+
+  // Odometer update
+  state.odometer += state.speed * dt / 3600; // km
+  state.trip += state.speed * dt / 3600;
+
+  // Update warnings & display
+  updateDisplays();
+  drawGauges();
+
+  requestAnimationFrame(loop);
+}
+
+// =====================
+//  DISPLAY UPDATE
+// =====================
+function updateDisplays() {
+  displays.gear.textContent = state.gear;
+  displays.odometer.textContent = `${state.odometer.toFixed(1).padStart(6, '0')} km`;
+  displays.trip.textContent = `Trip ${state.trip.toFixed(1)} km`;
+  displays.terrain.textContent = state.terrainModes[state.terrainIdx];
+  displays.air.textContent = `Air Susp: ${state.airSuspension}`;
+
+  // Warnings
+  setWarning(warnings.engine, !state.engineOn);
+  setWarning(warnings.oil, state.oil < 20 && state.engineOn);
+  setWarning(warnings.battery, (state.volt < 11 || state.volt > 14) && state.engineOn);
+  setWarning(warnings.temp, state.temp > 100);
+}
+
+function setWarning(el, active) {
+  if (active) {
+    el.classList.add('active');
+  } else {
+    el.classList.remove('active');
+  }
+}
+
+// =====================
+//  GAUGE DRAWING HELPERS
+// =====================
+function clearCanvas(c) {
+  c.clearRect(0, 0, c.canvas.width, c.canvas.height);
+}
+
+function drawCircularGauge(c, value, max, options = {}) {
+  const w = c.canvas.width;
+  const h = c.canvas.height;
+  const cx = w / 2;
+  const cy = h / 2;
+  const radius = Math.min(w, h) / 2 - 10;
+
+  const startAngle = Math.PI * 0.75;
+  const endAngle = Math.PI * 0.25;
+
+  clearCanvas(c);
+
+  // Background arc
+  c.lineWidth = 14;
+  c.strokeStyle = '#222';
+  c.beginPath();
+  c.arc(cx, cy, radius, startAngle, endAngle, false);
+  c.stroke();
+
+  // Value arc
+  const angle = startAngle + (endAngle - startAngle) * (value / max);
+  c.strokeStyle = options.color || '#00ff88';
+  c.beginPath();
+  c.arc(cx, cy, radius, startAngle, angle, false);
+  c.stroke();
+
+  // Needle
+  const needleLen = radius - 20;
+  const nx = cx + needleLen * Math.cos(angle);
+  const ny = cy + needleLen * Math.sin(angle);
+  c.strokeStyle = options.needleColor || '#fff';
+  c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(cx, cy);
+  c.lineTo(nx, ny);
+  c.stroke();
+
+  // Center dot
+  c.fillStyle = '#444';
+  c.beginPath();
+  c.arc(cx, cy, 6, 0, 2 * Math.PI);
+  c.fill();
+
+  // Label
+  c.fillStyle = '#888';
+  c.font = '16px Segoe UI';
+  c.textAlign = 'center';
+  c.fillText(options.label || '', cx, cy + radius + 20);
+
+  // Digital value (optional)
+  if (options.digital) {
+    c.fillStyle = options.color || '#00ff88';
+    c.font = '28px Segoe UI';
+    c.fillText(options.digital(value), cx, cy + 8);
+  }
+}
+
+function drawGauges() {
+  // Speedometer
+  drawCircularGauge(ctx.speed, state.speed, CONFIG.maxSpeed, {
+    label: 'km/h',
+    digital: v => v.toFixed(0),
+    color: '#00ff88',
+    needleColor: '#fff'
+  });
+
+  // Tachometer (RPM)
+  drawCircularGauge(ctx.rpm, state.rpm, CONFIG.maxRPM, {
+    label: 'RPM',
+    digital: v => (v / 1000).toFixed(1) + 'k',
+    color: state.rpm > 6000 ? '#ff4444' : '#00ff88',
+    needleColor: '#fff'
+  });
+
+  // Fuel
+  drawCircularGauge(ctx.fuel, state.fuel, CONFIG.maxFuel, {
+    label: 'FUEL %',
+    color: state.fuel < 15 ? '#ff4444' : '#00ff88',
+    needleColor: '#fff',
+    digital: v => v.toFixed(0) + '%'
+  });
+
+  // Temperature
+  drawCircularGauge(ctx.temp, state.temp, CONFIG.maxTemp, {
+    label: '°C',
+    color: state.temp > 100 ? '#ff4444' : '#00ff88',
+    needleColor: '#fff',
+    digital: v => v.toFixed(0) + '°'
+  });
+
+  // Oil
+  drawCircularGauge(ctx.oil, state.oil, CONFIG.maxOil, {
+    label: 'OIL',
+    color: state.oil < 20 ? '#ff4444' : '#00ff88',
+    needleColor: '#fff',
+    digital: v => v.toFixed(0)
+  });
+
+  // Volts
+  drawCircularGauge(ctx.volt, state.volt, CONFIG.maxVolt, {
+    label: 'V',
+    color: (state.volt < 11 || state.volt > 14) ? '#ff4444' : '#00ff88',
+    needleColor: '#fff',
+    digital: v => v.toFixed(1) + 'V'
+  });
+}
