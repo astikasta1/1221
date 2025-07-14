@@ -13,6 +13,7 @@ A realistic, interactive car dashboard inspired by Land Rover vehicles, built wi
 - **Temperature Gauge**: Engine temperature monitoring
 - **Oil Pressure Gauge**: Oil pressure monitoring
 - **Voltmeter**: Battery voltage monitoring
+- **Compass**: Displays heading direction
 
 ### Digital Displays
 - **Gear Display**: Current gear selection (P, D, R, N)
