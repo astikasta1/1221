@@ -1,148 +1,346 @@
-# Land Rover Style Car Dashboard
+# CRM Система
 
-A realistic, interactive car dashboard inspired by Land Rover vehicles, built with HTML5 Canvas and JavaScript.
+Современное веб-приложение для управления взаимоотношениями с клиентами (CRM) с бэкендом на FastAPI и фронтендом на React.
 
-## Features
+## 🚀 Особенности
 
-### Main Gauges
-- **Speedometer**: 0-260 km/h with digital speed display
-- **Tachometer**: 0-8000 RPM with red zone warning (6000+ RPM)
+- **Авторизация и роли**: JWT-токены, роли администратора, менеджера и пользователя
+- **Управление клиентами**: Полная информация о клиентах с поиском и фильтрацией
+- **Управление сделками**: Отслеживание сделок с различными статусами
+- **Управление задачами**: Назначение и контроль выполнения задач
+- **Логирование**: Полная история всех действий пользователей
+- **Адаптивный дизайн**: Современный интерфейс с Tailwind CSS
+- **API документация**: Автоматическая документация через Swagger
 
-### Secondary Gauges
-- **Fuel Gauge**: Shows fuel level percentage
-- **Temperature Gauge**: Engine temperature monitoring
-- **Oil Pressure Gauge**: Oil pressure monitoring
-- **Voltmeter**: Battery voltage monitoring
-- **Compass**: Displays heading direction
+## 📋 Структура проекта
 
-### Digital Displays
-- **Gear Display**: Current gear selection (P, D, R, N)
-- **Odometer**: Total distance traveled
-- **Trip Computer**: Trip distance
-- **Terrain Mode**: Selectable driving modes (NORMAL, SAND, ROCK, MUD, SNOW, AUTO)
-- **Air Suspension**: Status display
-- **Real-time Clock**: Current time display
-- **Outside Temperature**: Environmental temperature
-
-### Warning System
-- **Engine Warning Light**: Activates when engine is off
-- **Oil Warning Light**: Activates when oil pressure is low (<20)
-- **Battery Warning Light**: Activates when voltage is abnormal (<11V or >14V)
-- **Temperature Warning Light**: Activates when engine overheats (>100°C)
-
-## Controls
-
-### Mouse Controls
-- **Engine On/Off**: Toggle engine state
-- **Terrain Mode**: Cycle through terrain modes
-- **Simulate Driving**: Automatic driving simulation
-- **Reset**: Reset dashboard to default state
-
-### Keyboard Controls
-- **E**: Toggle Engine On/Off
-- **T**: Change Terrain Mode
-- **S**: Simulate Driving
-- **R**: Reset Dashboard
-- **Arrow Up**: Accelerate (when engine is on)
-- **Arrow Down**: Decelerate (when engine is on)
-
-## Visual Features
-
-### Styling
-- Premium dark theme with Land Rover aesthetics
-- Glowing green accents (#00ff88) for active elements
-- Realistic gauge designs with needle animations
-- Warning lights with pulsing animations
-- Responsive design for different screen sizes
-
-### Animations
-- Smooth needle movements
-- Real-time gauge updates (20 FPS)
-- Glowing text effects
-- Pulsing warning lights
-- Realistic engine parameter fluctuations
-
-## Technical Details
-
-### Files Structure
 ```
-├── index.html          # Main HTML structure
-├── dashboard.css       # Styling and animations
-├── dashboard.js        # JavaScript functionality
-└── README.md          # This file
+crm-system/
+├── backend/                    # Бэкенд на FastAPI
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py            # Точка входа приложения
+│   │   ├── database.py        # Конфигурация БД
+│   │   ├── models.py          # SQLAlchemy модели
+│   │   ├── schemas.py         # Pydantic схемы
+│   │   ├── auth.py            # JWT аутентификация
+│   │   └── routers/           # API роутеры
+│   │       ├── auth.py        # Авторизация
+│   │       ├── clients.py     # Клиенты
+│   │       ├── deals.py       # Сделки
+│   │       ├── tasks.py       # Задачи
+│   │       ├── users.py       # Пользователи
+│   │       └── logs.py        # Логи действий
+│   ├── requirements.txt       # Python зависимости
+│   ├── create_test_data.py    # Скрипт создания тестовых данных
+│   ├── Dockerfile
+│   └── .env                   # Конфигурация
+├── frontend/                   # Фронтенд на React
+│   ├── src/
+│   │   ├── components/        # React компоненты
+│   │   ├── pages/            # Страницы приложения
+│   │   ├── contexts/         # React контексты
+│   │   ├── services/         # API сервисы
+│   │   └── utils/            # Утилиты
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── Dockerfile
+├── docker-compose.yml         # Docker конфигурация
+├── start.sh                   # Скрипт быстрого запуска
+└── README.md
 ```
 
-### Canvas Implementation
-- Each gauge is rendered on a separate HTML5 Canvas element
-- Real-time redrawing with optimized performance
-- Vector-based graphics for crisp display at any resolution
-- Smooth animations using requestAnimationFrame
+## 🛠️ Технологии
 
-### Realistic Behavior
-- Engine idle RPM at 800
-- Realistic voltage readings (12.1V off, 13.8V running)
-- Fuel consumption during driving simulation
-- Temperature increase during operation
-- Oil pressure variations
-- Automatic warning system activation
+### Бэкенд
+- **FastAPI** - современный веб-фреймворк для Python
+- **SQLAlchemy** - ORM для работы с базой данных
+- **SQLite/PostgreSQL** - база данных (переключаемая)
+- **JWT** - аутентификация через токены
+- **Pydantic** - валидация данных
+- **Uvicorn** - ASGI сервер
 
-## Usage Instructions
+### Фронтенд
+- **React 18** - библиотека для создания пользовательских интерфейсов
+- **React Router** - маршрутизация
+- **React Query** - управление состоянием сервера
+- **React Hook Form** - работа с формами
+- **Tailwind CSS** - CSS фреймворк
+- **Axios** - HTTP клиент
+- **Lucide React** - иконки
 
-1. **Starting the Dashboard**:
-   - Open `index.html` in a web browser
-   - All gauges will initialize in "engine off" state
+## 📦 Требования
 
-2. **Basic Operation**:
-   - Click "Engine On/Off" or press 'E' to start the engine
-   - Use keyboard arrows to manually control speed
-   - Watch gauges respond realistically to changes
+- **Python 3.8+**
+- **Node.js 16+**
+- **npm** или **yarn**
+- **Docker** (опционально)
 
-3. **Driving Simulation**:
-   - Click "Simulate Driving" or press 'S' for automatic demo
-   - Dashboard will show realistic driving parameters
-   - Fuel will gradually decrease
-   - Temperature will rise slightly
+## 🚀 Быстрый запуск
 
-4. **Terrain Modes**:
-   - Click "Terrain Mode" or press 'T' to cycle through modes
-   - Each mode represents different Land Rover driving conditions
+### Автоматический запуск (рекомендуется)
 
-## Browser Compatibility
+```bash
+# Клонируйте репозиторий
+git clone <repository-url>
+cd crm-system
 
-- **Chrome**: Full support
-- **Firefox**: Full support
-- **Safari**: Full support
-- **Edge**: Full support
+# Запустите скрипт автоматической установки и запуска
+./start.sh
+```
 
-Requires HTML5 Canvas support (all modern browsers).
+Скрипт автоматически:
+- Установит все зависимости
+- Создаст тестовые данные
+- Запустит бэкенд и фронтенд
 
-## Customization
+### Ручной запуск
 
-### Colors
-Edit `dashboard.css` to change color scheme:
-- Primary accent: `#00ff88` (green)
-- Warning: `#ff4444` (red)
-- Background: `#1a1a1a` (dark gray)
+#### 1. Запуск бэкенда
 
-### Gauge Ranges
-Edit `dashboard.js` to modify gauge ranges:
-- Speedometer: Change `260` for max speed
-- Tachometer: Change `8000` for max RPM
-- Other gauges: Modify respective range values
+```bash
+cd backend
 
-### Features
-Add new features by:
-1. Adding HTML elements in `index.html`
-2. Adding styling in `dashboard.css`
-3. Implementing functionality in `dashboard.js`
+# Установка зависимостей
+pip install -r requirements.txt
 
-## Performance
+# Создание тестовых данных (опционально)
+python create_test_data.py
 
-- Optimized 20 FPS animation loop
-- Efficient canvas clearing and redrawing
-- Minimal DOM manipulation
-- Smooth performance on modern devices
+# Запуск сервера
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
 
----
+#### 2. Запуск фронтенда
 
-**Note**: This is a demonstration dashboard. For actual vehicle integration, additional safety measures and real sensor data would be required.
+```bash
+cd frontend
+
+# Установка зависимостей
+npm install
+
+# Запуск в режиме разработки
+npm start
+```
+
+### Docker запуск
+
+```bash
+# Запуск всех сервисов
+docker-compose up -d
+
+# Просмотр логов
+docker-compose logs -f
+
+# Остановка
+docker-compose down
+```
+
+## 🔧 Конфигурация
+
+Настройте параметры в файле `backend/.env`:
+
+```env
+# База данных
+DATABASE_URL=sqlite:///./crm.db
+# Для PostgreSQL:
+# DATABASE_URL=postgresql://crm_user:crm_password@localhost:5432/crm
+
+# JWT настройки
+SECRET_KEY=your-super-secret-key-change-in-production
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Сервер
+PORT=8000
+DEBUG=True
+```
+
+## 👥 Тестовые аккаунты
+
+После создания тестовых данных доступны следующие аккаунты:
+
+| Роль | Email | Пароль | Описание |
+|------|-------|--------|----------|
+| Администратор | admin@example.com | admin123 | Полный доступ ко всем функциям |
+| Менеджер | manager@example.com | manager123 | Управление клиентами и сделками |
+| Менеджер | anna@example.com | anna123 | Управление клиентами и сделками |
+| Пользователь | user@example.com | user123 | Просмотр и выполнение задач |
+
+## 📡 API Документация
+
+После запуска бэкенда документация доступна по адресам:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **OpenAPI JSON**: http://localhost:8000/openapi.json
+
+### Основные эндпоинты
+
+| Группа | Эндпоинт | Описание |
+|--------|----------|----------|
+| Авторизация | `POST /api/auth/login` | Вход в систему |
+| Авторизация | `POST /api/auth/register` | Регистрация |
+| Авторизация | `GET /api/auth/me` | Информация о пользователе |
+| Клиенты | `GET /api/clients` | Список клиентов |
+| Клиенты | `POST /api/clients` | Создание клиента |
+| Сделки | `GET /api/deals` | Список сделок |
+| Сделки | `POST /api/deals` | Создание сделки |
+| Задачи | `GET /api/tasks` | Список задач |
+| Задачи | `GET /api/tasks/my` | Мои задачи |
+| Пользователи | `GET /api/users` | Список пользователей |
+| Логи | `GET /api/logs` | История действий |
+
+## 🎯 Функциональность
+
+### ✅ Реализованные функции
+
+- **Авторизация пользователей** с JWT токенами
+- **Управление ролями** (администратор, менеджер, пользователь)
+- **CRUD операции** для всех сущностей
+- **Поиск и фильтрация** по всем таблицам
+- **Сортировка** данных в таблицах
+- **Логирование всех действий** пользователей
+- **Адаптивный дизайн** для всех устройств
+- **Валидация форм** с подробными сообщениями об ошибках
+- **Уведомления** о результатах операций
+- **Переключение БД** между SQLite и PostgreSQL
+
+### 📊 Дашборд
+
+- Общая статистика системы
+- Количество клиентов, сделок, задач
+- Недавняя активность
+- Быстрый доступ к основным функциям
+
+### 👥 Управление клиентами
+
+- Полная информация о клиентах
+- Контактные данные и комментарии
+- Поиск по имени, email, компании
+- История взаимодействий
+
+### 💼 Управление сделками
+
+- Отслеживание статуса сделок
+- Привязка к клиентам и менеджерам
+- Фильтрация по статусу и менеджеру
+- Расчет общей суммы сделок
+
+### ✅ Управление задачами
+
+- Назначение задач пользователям
+- Установка дедлайнов
+- Отслеживание статуса выполнения
+- Фильтр "Мои задачи"
+- Выделение просроченных задач
+
+## 🔒 Безопасность
+
+- **JWT токены** для аутентификации
+- **Хэширование паролей** с использованием bcrypt
+- **Валидация данных** на уровне API
+- **Авторизация по ролям**
+- **CORS настройки** для безопасности
+
+## 🗄️ База данных
+
+### Модель данных
+
+```sql
+Users (Пользователи)
+├── id (PK)
+├── name
+├── email (unique)
+├── hashed_password
+├── role (admin/manager/user)
+└── timestamps
+
+Clients (Клиенты)
+├── id (PK)
+├── name
+├── email
+├── phone
+├── company
+├── address
+├── comment
+└── timestamps
+
+Deals (Сделки)
+├── id (PK)
+├── title
+├── amount
+├── status (new/in_progress/won/lost)
+├── description
+├── client_id (FK)
+├── manager_id (FK)
+└── timestamps
+
+Tasks (Задачи)
+├── id (PK)
+├── title
+├── description
+├── status (todo/in_progress/done)
+├── deadline
+├── assigned_user_id (FK)
+└── timestamps
+
+ActionLogs (Логи действий)
+├── id (PK)
+├── user_id (FK)
+├── action (create/update/delete)
+├── entity_type
+├── entity_id
+├── details (JSON)
+└── timestamp
+```
+
+## 🚀 Развертывание
+
+### Локальное развертывание
+
+1. Клонируйте репозиторий
+2. Настройте `.env` файл
+3. Запустите `./start.sh`
+
+### Docker развертывание
+
+```bash
+# Для разработки
+docker-compose up -d
+
+# Для продакшена (с PostgreSQL)
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### Продакшен развертывание
+
+1. Настройте PostgreSQL
+2. Обновите `DATABASE_URL` в `.env`
+3. Установите `SECRET_KEY`
+4. Настройте nginx для проксирования
+5. Используйте gunicorn для продакшена
+
+## 🤝 Участие в разработке
+
+1. Форкните репозиторий
+2. Создайте ветку для новой функции
+3. Внесите изменения
+4. Добавьте тесты
+5. Создайте Pull Request
+
+## 📝 Лицензия
+
+Этот проект распространяется под лицензией MIT. См. файл [LICENSE](LICENSE) для подробностей.
+
+## 🆘 Поддержка
+
+Если у вас возникли вопросы или проблемы:
+
+1. Проверьте [документацию API](http://localhost:8000/docs)
+2. Создайте [Issue](https://github.com/your-repo/issues)
+3. Обратитесь к разработчикам
+
+## 🔄 Обновления
+
+- **v1.0.0** - Первый релиз с базовым функционалом
+- Планируются: экспорт данных, интеграции, мобильное приложение
